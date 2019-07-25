@@ -162,11 +162,15 @@ class learndash_wc_credit_audit {
             } else {
                 echo $buttons;
             }
+
+            // Output CSS to hide currency symbol in course price display
+            echo '<style>.ld-course-status .ld-course-status-price .ld-currency { display: none; }</style>';
         }   
     }
 
     /**
      * Adjust pricing display in LD3 Course infobar price cell
+     * This is not really needed any more since we're using the 'filter_saved_fields' function to save the course_price 
      */
     public function learndash_no_price_price_label( $default_price_display ) {
         global $post;
