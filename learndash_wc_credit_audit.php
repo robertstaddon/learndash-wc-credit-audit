@@ -3,56 +3,202 @@
 Plugin Name: LearnDash WooCommerce Credit/Audit Purchase
 Plugin URI: http://www.learndash.com
 Description: Add two buttons to LearnDash courses to add credit/audit products to cart
-Version: 1.0
+Version: 2.0
 Author: Abundant Designs
 Author URI: http://www.abundantdesigns.com
 Text Domain: learndash_wc_credit_audit
 */
 
 class learndash_wc_credit_audit {
+
 	public function __construct() {
         
-        // Enqueue WordPress admin JavaScript
-        add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+        // Filter LearnDash settings fields
+        add_filter( 'learndash_settings_fields', array( $this, 'learndash_settings_fields' ), 10, 2 );
+
+        // Save new LearnDash settings fields
+        add_filter( 'learndash_metabox_save_fields', array( $this, 'get_post_settings_field_updates' ), 10, 3 );
+
+        // Filter final save values
+        add_filter( 'learndash_settings_save_values', array( $this, 'filter_saved_fields' ), 10, 2 );
         
-        // Filter from class-ld-lms.php to filter $post_args used to create the custom post types and everything associated with them.
-        add_filter( 'learndash_post_args', array( $this, 'learndash_post_args' ) );
-        
+        // Adjust LearnDash 3.0 theme course infobar 
+        add_action( 'learndash-course-infobar-action-cell-before', array( $this, 'learndash_course_infobar_action_cell_before'), 10, 3 );
+        add_filter( 'learndash_no_price_price_label', array( $this, 'learndash_no_price_price_label') );
+
         // Filter from boss-learndash-functions.php to filter a closed course payment button
         add_filter( 'learndash_payment_closed_button', array( $this, 'learndash_payment_closed_button' ), 10, 2);
         
-	}
+        $this->settings_fields = array(
+            'course_price_type_wcca_audit_button_product_id',
+            'course_price_type_wcca_credit_button_product_id',
+        );
+    }
     
+    /**
+     * LearnDash settings fields
+     */
+    public function learndash_settings_fields( $setting_option_fields, $settings_metabox_key ) {
+
+        if ( $settings_metabox_key === 'learndash-course-access-settings' ) {
+
+            if ( class_exists( 'LearnDash_Settings_Metabox' ) ) {
+                $settings_instance = LearnDash_Settings_Metabox::get_metabox_instance( 'LearnDash_Settings_Metabox_Course_Access_Settings' );
+                
+                // Retrieve existing values
+                global $post;
+                $existing_option_values = learndash_get_setting( $post->ID );
+
+                foreach ( $this->settings_fields as $setting_field ) {
+                    if ( isset( $existing_option_values[ $setting_field ] ) ) {
+                        $setting_option_values[ $setting_field ] = $existing_option_values[ $setting_field ];
+                    } else {
+                        $setting_option_values[ $setting_field ] = '';
+                    }
+                }
+
+                // Load the sub_option_fields
+                $settings_sub_option_fields['course_price_type_wcca_fields'] = array(
+                    'course_price_type_wcca_audit_button_product_id' => array(
+                        'name'    => 'course_price_type_wcca_audit_button_product_id',
+                        'label'     => esc_html__( 'Audit Button Product ID', 'learndash_wc_credit_audit' ),
+                        'type'    => 'text',
+                        'class'   => '-medium',
+                        'value'   => $setting_option_values['course_price_type_wcca_audit_button_product_id'],
+                        'help_text' => sprintf(
+                            esc_html_x( 'Enter the WooCommerce Product ID for the product that will need to be purchased to Audit this %s.', 'placeholder: course', 'learndash_wc_credit_audit' ),
+                            learndash_get_custom_label_lower( 'course' )
+                        ),
+                        'default' => '',
+                    ),
+                    'course_price_type_wcca_credit_button_product_id' => array(
+                        'name'      => 'course_price_type_wcca_credit_button_product_id',
+                        'label'     => esc_html__( 'Credit Button Product ID', 'learndash_wc_credit_audit' ),
+                        'type'      => 'text',
+                        'class'   => '-medium',
+                        'value'     => $setting_option_values['course_price_type_wcca_credit_button_product_id'],
+                        'help_text' => sprintf(
+                            esc_html_x( 'Enter the WooCommerce Product ID for the product that will need to be purchased to Credit this %s.', 'placeholder: course', 'learndash_wc_credit_audit' ),
+                            learndash_get_custom_label_lower( 'course' )
+                        ),
+                        'default'   => '',
+                    ),
+                );
+                
+                foreach ( $settings_sub_option_fields['course_price_type_wcca_fields'] as $setting_option_key => &$settings_sub_option_field ) {
+                    $settings_sub_option_field = $settings_instance->load_settings_field( $settings_sub_option_field );
+                }
+
+                // Set up the option_fields
+                $setting_option_fields['course_price_type']['options']['wcca'] = array(
+                    'label'               => esc_html__( 'WooCommerce Credit/Audit', 'learndash' ),
+                    'description'         => sprintf(
+                        // translators: placeholder: course.
+                        esc_html_x( 'The %s will be closed unlessed purchased or manually enrolled. Enrollment buttons will be displayed linking to WooCommerce products for the student to either credit or audit.', 'placeholder: course', 'learndash' ),
+                        learndash_get_custom_label_lower( 'course' )
+                    ),
+                    'inline_fields'       => array(
+                        'course_price_type_wcca' => $settings_sub_option_fields['course_price_type_wcca_fields'],
+                    ),
+                    'inner_section_state' => ( 'wcca' === $existing_option_values['course_price_type'] ) ? 'open' : 'closed',
+                );
+            }
+        }
+
+        return $setting_option_fields;
+    }
+    
+    /**
+     * LearnDash save settings fields
+     * Hooked from class-ld-settings-metabox-course-access-settings.php
+     */
+    public function get_post_settings_field_updates( $settings_field_updates, $settings_metabox_key, $settings_screen_id ) {
+
+        if ( $settings_metabox_key === 'learndash-course-access-settings' ) {
+            $post_values = $_POST[ $settings_metabox_key ];
+
+            foreach( $this->settings_fields as $setting_field ) {
+                if ( isset( $post_values[ $setting_field ] ) ) {
+                    $post_value = $post_values[ $setting_field ];
+                } else {
+                    $post_value = '';
+                }
+                $settings_field_updates[ $setting_field ] = $post_value;
+            }
+                
+        }
+
+        return $settings_field_updates;
+    }
+
+    /**
+     * Final filter for LearnDash save values
+     * Hooked from class-ld-settings-metabox-course-access-settings.php
+     */
+    public function filter_saved_fields( $settings_values, $settings_metabox_key ) {
+
+        if ( $settings_metabox_key === 'learndash-course-access-settings' ) {
+            // Overwrite "course_price" if using "wcca" price type - important for LearnDash Course Grid "course_list_template.php" ribbon display    
+            if ( 'wcca' === $settings_values['course_price_type'] ) {
+                $settings_values['course_price'] = $this->get_price_display( $_POST['post_ID'] );
+            }
+        }
+
+        return $settings_values;
+    }
+
+
+    /**
+     * Insert buttons into LD3 Course infobar action cell
+     */
+    public function learndash_course_infobar_action_cell_before( $post_type, $course_id, $user_id ) {
+        $course_pricing = learndash_get_course_price( $course_id );
+
+        if ( $course_pricing['type'] == 'wcca' ) {
+            $buttons = $this->get_payment_buttons( $course_id );
+            
+            if ( empty( $buttons ) ) {
+                echo '<span class="ld-text">' . __( 'This course is currently closed', 'learndash' ) . '</span>';
+            } else {
+                echo $buttons;
+            }
+        }   
+    }
+
+    /**
+     * Adjust pricing display in LD3 Course infobar price cell
+     */
+    public function learndash_no_price_price_label( $default_price_display ) {
+        global $post;
+        $course_id = $post->ID;
+        $course_pricing = learndash_get_course_price( $course_id );
+
+        if ( $course_pricing['type'] == 'wcca' ) {
+            $price_display = $this->get_price_display( $course_id );
+            
+            if ( empty( $price_display ) ) {
+                return $default_price_display;
+            } else {
+                return $price_display;
+            }
+        }
+
+        return $default_price_display;
+    }
+
     /*
-     * Change payment buttons to Credit and Audit 
+     * Boss Theme: Change payment buttons to Credit and Audit 
      * Customized from boss_edu_payment_buttons() function
      */
-    function learndash_payment_closed_button( $custom_button, $payment_params ) {
+    public function learndash_payment_closed_button( $custom_button, $payment_params ) {
         if ( class_exists( 'WooCommerce' ) ) {
             $course = $payment_params['post'];
             $course_id = $course->ID;
             
+            $buttons = $this->get_payment_buttons( $course_id );
             
-            $meta = get_post_meta( $course_id, '_sfwd-courses', true );
-            $audit_button_product_id = @$meta['sfwd-courses_audit_button_product_id'];
-            $credit_button_product_id = @$meta['sfwd-courses_credit_button_product_id'];
-            
-            // Replace "Take this Course" button text with "$10 Audit Course" and "$10 Credit Course"
-            $new_button = '';
-            if ( $audit_product = wc_get_product( $audit_button_product_id ) ) {
-                $button_text = sprintf( __( '%1$s%2$s - Audit Course', 'learndash_wc_credit_audit' ), get_woocommerce_currency_symbol(), $audit_product->get_price() );
-                $button_url = get_permalink( $audit_product->get_id() ) . "?add-to-cart=" . $audit_product->get_id();
-                $new_button .= '<a class="btn-join" href="'.$button_url.'" id="btn-join">'. $button_text .'</a> ';
-            }
-            
-            if ( $credit_product = wc_get_product( $credit_button_product_id ) ) {
-                $button_text = sprintf( __( '%1$s%2$s - Credit Course', 'learndash_wc_credit_audit' ), get_woocommerce_currency_symbol(), $credit_product->get_price() );
-                $button_url = get_permalink( $credit_product->get_id() ) . "?add-to-cart=" . $credit_product->get_id();
-                $new_button .= ' <a class="btn-join" href="'.$button_url.'" id="btn-join">'. $button_text .'</a>';
-            }
-            
-            if ( !empty( $new_button) ) {
-                return $new_button;
+            if ( !empty( $buttons ) ) {
+                return $buttons;
             }            
         }
       
@@ -60,46 +206,52 @@ class learndash_wc_credit_audit {
     }
 
 
-    /*
-     * Enqueue WordPress admin JavaScript
-     */
-    public function admin_enqueue_scripts( $hook ) {
-        if ( class_exists( 'WooCommerce' ) ) {
-            // Add custom script for LearnDash course admin show/hide
-            if ('post.php' !== $hook) {
-                return;
-            }
-            wp_enqueue_script('custom_sfwd_module.', plugin_dir_url(__FILE__) . '/js/ldwcca_sfwd_module.js');
-        }
-    }
+    public function get_payment_buttons( $course_id ) {
+        $meta = get_post_meta( $course_id, '_sfwd-courses', true );
+        $audit_button_product_id = @$meta['sfwd-courses_course_price_type_audit_button_product_id'];
+        $credit_button_product_id = @$meta['sfwd-courses_course_price_type_credit_button_product_id'];
+        
+        $price_format = apply_filters( 'learndash_wc_credit_audit_price_display_format', '{currency}{price}' );
 
-
-    /*
-     * Add extra arguments to LearnDash
-     */
-    public function learndash_post_args( $post_args ) {
-        if ( class_exists( 'WooCommerce' ) ) {
-            // Add 'Audit Button Product ID'
-            $insert_args = array(
-                'audit_button_product_id' => array(
-                    'name' => esc_html__( 'Audit Button Product ID', 'learndash_wc_credit_audit' ),
-                    'type' => 'number',
-                    'help_text' => __( 'Enter the WooCommerce Product ID for the product that will need to be purchased to Audit this course', 'learndash_wc_credit_audit' ),
-                    'show_in_rest' => true
-                ),
-                'credit_button_product_id' => array(
-                    'name' => esc_html__( 'Credit Button Product ID', 'learndash_wc_credit_audit' ),
-                    'type' => 'number',
-                    'help_text' => __( 'Enter the WooCommerce Product ID for the product that will need to be purchased to Credit this course', 'learndash_wc_credit_audit' ),
-                    'show_in_rest' => true,
-                )
-            );
-            
-            $offset = 3;
-            $post_args['sfwd-courses']['fields'] = array_slice( $post_args['sfwd-courses']['fields'], 0, $offset, true) + $insert_args + array_slice( $post_args['sfwd-courses']['fields'], $offset, NULL, true);
+        // Replace "Take this Course" button text with "$10 Audit Course" and "$10 Credit Course"
+        $buttons = '';
+        if ( $audit_product = wc_get_product( $audit_button_product_id ) ) {
+            $button_text = str_replace(array( '{currency}', '{price}' ), array( get_woocommerce_currency_symbol(), $audit_product->get_price() ), $price_format );
+            $button_text .= __( ' - Audit Course', 'learndash_wc_credit_audit' );
+            $button_url = get_permalink( $audit_product->get_id() ) . "?add-to-cart=" . $audit_product->get_id();
+            $buttons .= '<div style="margin: 5px"><a class="btn-join" href="'.$button_url.'" id="btn-join">'. $button_text .'</a></div> ';
         }
         
-        return $post_args;
+        if ( $credit_product = wc_get_product( $credit_button_product_id ) ) {
+            $button_text = str_replace(array( '{currency}', '{price}' ), array( get_woocommerce_currency_symbol(), $credit_product->get_price() ), $price_format );
+            $button_text .= __( ' - Credit Course', 'learndash_wc_credit_audit' );
+            $button_url = get_permalink( $credit_product->get_id() ) . "?add-to-cart=" . $credit_product->get_id();
+            $buttons .= ' <div style="margin: 5px"><a class="btn-join" href="'.$button_url.'" id="btn-join">'. $button_text .'</a></div>';
+        }
+
+        return $buttons;
     }
+
+    public function get_price_display( $course_id ) {
+        $meta = get_post_meta( $course_id, '_sfwd-courses', true );
+        $audit_button_product_id = @$meta['sfwd-courses_course_price_type_audit_button_product_id'];
+        $credit_button_product_id = @$meta['sfwd-courses_course_price_type_credit_button_product_id'];
+
+        $price_format = apply_filters( 'learndash_wc_credit_audit_price_display_format', '{currency}{price}' );
+
+        $price_display = '';
+        if ( $audit_product = wc_get_product( $audit_button_product_id ) ) {
+            $price_display .= str_replace(array( '{currency}', '{price}' ), array( get_woocommerce_currency_symbol(), $audit_product->get_price() ), $price_format );
+        }
+        
+        if ( $credit_product = wc_get_product( $credit_button_product_id ) ) {
+            if ( !empty( $price_display ) ) 
+                $price_display .= " &ndash; ";
+            $price_display .= str_replace(array( '{currency}', '{price}' ), array( get_woocommerce_currency_symbol(), $credit_product->get_price() ), $price_format );
+        }
+
+        return $price_display;
+    }
+
 }
 new learndash_wc_credit_audit();
