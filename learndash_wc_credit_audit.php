@@ -26,9 +26,9 @@ class learndash_wc_credit_audit {
         add_action( 'learndash-course-infobar-action-cell-before', array( $this, 'learndash_course_infobar_action_cell_before'), 10, 3 );
         add_filter( 'learndash_no_price_price_label', array( $this, 'learndash_no_price_price_label') );
 
-        // Filter from boss-learndash-functions.php to filter a closed course payment button
-        add_filter( 'learndash_payment_closed_button', array( $this, 'learndash_payment_closed_button' ), 10, 2);
-        
+        // Filter from boss-learndash-functions.php to filter payment button
+        add_filter( 'learndash_payment_button', array( $this, 'learndash_payment_button' ), 10, 2);
+
         $this->settings_fields = array(
             'course_price_type_wcca_audit_button_product_id',
             'course_price_type_wcca_credit_button_product_id',
@@ -154,7 +154,7 @@ class learndash_wc_credit_audit {
     public function learndash_course_infobar_action_cell_before( $post_type, $course_id, $user_id ) {
         $course_pricing = learndash_get_course_price( $course_id );
 
-        if ( $course_pricing['type'] == 'wcca' ) {
+        if ( class_exists( 'WooCommerce' ) && 'wcca' == $course_pricing['type']  ) {
             $buttons = $this->get_payment_buttons( $course_id );
             
             if ( empty( $buttons ) ) {
@@ -194,8 +194,9 @@ class learndash_wc_credit_audit {
      * Boss Theme: Change payment buttons to Credit and Audit 
      * Customized from boss_edu_payment_buttons() function
      */
-    public function learndash_payment_closed_button( $custom_button, $payment_params ) {
-        if ( class_exists( 'WooCommerce' ) ) {
+    public function learndash_payment_button( $payment_button, $payment_params ) {
+
+        if ( class_exists( 'WooCommerce' ) && 'wcca' == $payment_params['course_price_type'] ) {
             $course = $payment_params['post'];
             $course_id = $course->ID;
             
@@ -206,14 +207,17 @@ class learndash_wc_credit_audit {
             }            
         }
       
-        return $custom_button;
+        return $payment_button;
     }
 
 
+    /**
+     * Helper function to return payment buttons
+     */
     public function get_payment_buttons( $course_id ) {
         $meta = get_post_meta( $course_id, '_sfwd-courses', true );
-        $audit_button_product_id = @$meta['sfwd-courses_course_price_type_audit_button_product_id'];
-        $credit_button_product_id = @$meta['sfwd-courses_course_price_type_credit_button_product_id'];
+        $audit_button_product_id = @$meta['sfwd-courses_course_price_type_wcca_audit_button_product_id'];
+        $credit_button_product_id = @$meta['sfwd-courses_course_price_type_wcca_credit_button_product_id'];
         
         $price_format = apply_filters( 'learndash_wc_credit_audit_price_display_format', '{currency}{price}' );
 
@@ -223,19 +227,22 @@ class learndash_wc_credit_audit {
             $button_text = str_replace(array( '{currency}', '{price}' ), array( get_woocommerce_currency_symbol(), $audit_product->get_price() ), $price_format );
             $button_text .= __( ' - Audit Course', 'learndash_wc_credit_audit' );
             $button_url = get_permalink( $audit_product->get_id() ) . "?add-to-cart=" . $audit_product->get_id();
-            $buttons .= '<div style="margin: 5px"><a class="btn-join" href="'.$button_url.'" id="btn-join">'. $button_text .'</a></div> ';
+            $buttons .= '<a class="btn-join" href="'.$button_url.'" id="btn-join">'. $button_text .'</a> ';
         }
         
         if ( $credit_product = wc_get_product( $credit_button_product_id ) ) {
             $button_text = str_replace(array( '{currency}', '{price}' ), array( get_woocommerce_currency_symbol(), $credit_product->get_price() ), $price_format );
             $button_text .= __( ' - Credit Course', 'learndash_wc_credit_audit' );
             $button_url = get_permalink( $credit_product->get_id() ) . "?add-to-cart=" . $credit_product->get_id();
-            $buttons .= ' <div style="margin: 5px"><a class="btn-join" href="'.$button_url.'" id="btn-join">'. $button_text .'</a></div>';
+            $buttons .= ' <a class="btn-join" href="'.$button_url.'" id="btn-join">'. $button_text .'</a>';
         }
 
         return $buttons;
     }
 
+    /**
+     * Helper function to return price string
+     */
     public function get_price_display( $course_id ) {
         $meta = get_post_meta( $course_id, '_sfwd-courses', true );
         $audit_button_product_id = @$meta['sfwd-courses_course_price_type_audit_button_product_id'];
