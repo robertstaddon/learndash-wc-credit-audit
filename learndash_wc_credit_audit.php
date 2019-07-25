@@ -227,14 +227,14 @@ class learndash_wc_credit_audit {
             $button_text = str_replace(array( '{currency}', '{price}' ), array( get_woocommerce_currency_symbol(), $audit_product->get_price() ), $price_format );
             $button_text .= __( ' - Audit Course', 'learndash_wc_credit_audit' );
             $button_url = get_permalink( $audit_product->get_id() ) . "?add-to-cart=" . $audit_product->get_id();
-            $buttons .= '<a class="btn-join" href="'.$button_url.'">'. $button_text .'</a> ';
+            $buttons .= '<a class="btn-join" href="'.$button_url.'" id="btn-join">'. $button_text .'</a> ';
         }
         
         if ( $credit_product = wc_get_product( $credit_button_product_id ) ) {
             $button_text = str_replace(array( '{currency}', '{price}' ), array( get_woocommerce_currency_symbol(), $credit_product->get_price() ), $price_format );
             $button_text .= __( ' - Credit Course', 'learndash_wc_credit_audit' );
             $button_url = get_permalink( $credit_product->get_id() ) . "?add-to-cart=" . $credit_product->get_id();
-            $buttons .= ' <a class="btn-join" href="'.$button_url.'">'. $button_text .'</a>';
+            $buttons .= ' <a class="btn-join" href="'.$button_url.'" id="btn-join">'. $button_text .'</a>';
         }
 
         return $buttons;
