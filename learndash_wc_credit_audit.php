@@ -245,8 +245,8 @@ class learndash_wc_credit_audit {
      */
     public function get_price_display( $course_id ) {
         $meta = get_post_meta( $course_id, '_sfwd-courses', true );
-        $audit_button_product_id = @$meta['sfwd-courses_course_price_type_audit_button_product_id'];
-        $credit_button_product_id = @$meta['sfwd-courses_course_price_type_credit_button_product_id'];
+        $audit_button_product_id = @$meta['sfwd-courses_course_price_type_wcca_audit_button_product_id'];
+        $credit_button_product_id = @$meta['sfwd-courses_course_price_type_wcca_credit_button_product_id'];
 
         $price_format = apply_filters( 'learndash_wc_credit_audit_price_display_format', '{currency}{price}' );
 
