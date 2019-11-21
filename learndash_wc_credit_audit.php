@@ -1,12 +1,14 @@
 <?php
 /*
-Plugin Name: LearnDash WooCommerce Credit/Audit Purchase
-Plugin URI: http://www.learndash.com
-Description: Add two buttons to LearnDash courses to add credit/audit products to cart
-Version: 2.0
-Author: Abundant Designs
-Author URI: http://www.abundantdesigns.com
-Text Domain: learndash_wc_credit_audit
+ * Plugin Name: LearnDash WooCommerce Credit/Audit Purchase
+ * Plugin URI: http://www.learndash.com
+ * Description: Add two buttons to LearnDash courses to add credit/audit products to cart
+ * Version: 2.1
+ * Author: Abundant Designs
+ * Author URI: http://www.abundantdesigns.com
+ * Text Domain: learndash_wc_credit_audit
+ * 
+ * WC tested up to: 3.8
 */
 
 class learndash_wc_credit_audit {
