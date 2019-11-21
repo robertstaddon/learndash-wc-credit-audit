@@ -3,7 +3,7 @@
  * Plugin Name: LearnDash WooCommerce Credit/Audit Purchase
  * Plugin URI: http://www.learndash.com
  * Description: Add two buttons to LearnDash courses to add credit/audit products to cart
- * Version: 2.1
+ * Version: 2.2
  * Author: Abundant Designs
  * Author URI: http://www.abundantdesigns.com
  * Text Domain: learndash_wc_credit_audit
@@ -228,16 +228,17 @@ class learndash_wc_credit_audit {
         if ( $audit_product = wc_get_product( $audit_button_product_id ) ) {
             $button_text = str_replace(array( '{currency}', '{price}' ), array( get_woocommerce_currency_symbol(), $audit_product->get_price() ), $price_format );
             $button_text .= __( ' - Audit Course', 'learndash_wc_credit_audit' );
-            $button_url = get_permalink( $audit_product->get_id() ) . "?add-to-cart=" . $audit_product->get_id();
-            $buttons .= '<a class="btn-join" href="'.$button_url.'" id="btn-join">'. $button_text .'</a> ';
+            $button_url = wc_get_cart_url() . "?add-to-cart=" . $audit_product->get_id();
+            $buttons .= '<a class="btn-join" href="' . $button_url . '" id="btn-join">'. $button_text .'</a> ';
         }
         
         if ( $credit_product = wc_get_product( $credit_button_product_id ) ) {
             $button_text = str_replace(array( '{currency}', '{price}' ), array( get_woocommerce_currency_symbol(), $credit_product->get_price() ), $price_format );
             $button_text .= __( ' - Credit Course', 'learndash_wc_credit_audit' );
-            $button_url = get_permalink( $credit_product->get_id() ) . "?add-to-cart=" . $credit_product->get_id();
-            $buttons .= ' <a class="btn-join" href="'.$button_url.'" id="btn-join">'. $button_text .'</a>';
+            $button_url = wc_get_cart_url() . "?add-to-cart=" . $credit_product->get_id();
+            $buttons .= ' <a class="btn-join" href="' . $button_url . '" id="btn-join">'. $button_text .'</a>';
         }
+
 
         return $buttons;
     }
