@@ -3,7 +3,7 @@
  * Plugin Name: LearnDash WooCommerce Credit/Audit Purchase
  * Plugin URI: http://www.learndash.com
  * Description: Add two buttons to LearnDash courses to add credit/audit products to cart
- * Version: 2.3
+ * Version: 2.4
  * Author: Abundant Designs
  * Author URI: http://www.abundantdesigns.com
  * Text Domain: learndash_wc_credit_audit
@@ -27,6 +27,9 @@ class learndash_wc_credit_audit {
         // Adjust LearnDash 3.0 theme course infobar 
         add_action( 'learndash-course-infobar-action-cell-before', array( $this, 'learndash_course_infobar_action_cell_before'), 10, 3 );
         add_filter( 'learndash_no_price_price_label', array( $this, 'learndash_no_price_price_label') );
+
+        // Filter learndash-course-grid to allow HTML in ribbon text
+        add_filter( 'learndash_course_grid_ribbon_text_allow_html', '__return_true' );
 
         // Filter from boss-learndash-functions.php to filter payment button
         add_filter( 'learndash_payment_button', array( $this, 'learndash_payment_button' ), 10, 2);
@@ -241,23 +244,22 @@ class learndash_wc_credit_audit {
 
     /**
      * Helper function to return price string
+     * This price string includes HTML (unlike the default LearnDash string) to support dynamic price and currency switching 
      */
     public function get_price_display( $course_id ) {
         $meta = get_post_meta( $course_id, '_sfwd-courses', true );
         $audit_button_product_id = @$meta['sfwd-courses_course_price_type_wcca_audit_button_product_id'];
         $credit_button_product_id = @$meta['sfwd-courses_course_price_type_wcca_credit_button_product_id'];
 
-        $price_format = apply_filters( 'learndash_wc_credit_audit_price_display_format', '{currency}{price}' );
-
         $price_display = '';
         if ( $audit_product = wc_get_product( $audit_button_product_id ) ) {
-            $price_display .= str_replace(array( '{currency}', '{price}' ), array( get_woocommerce_currency_symbol(), $audit_product->get_price() ), $price_format );
+            $price_display .= $audit_product->get_price_html();
         }
         
         if ( $credit_product = wc_get_product( $credit_button_product_id ) ) {
             if ( !empty( $price_display ) ) 
                 $price_display .= " &ndash; ";
-            $price_display .= str_replace(array( '{currency}', '{price}' ), array( get_woocommerce_currency_symbol(), $credit_product->get_price() ), $price_format );
+            $price_display .= $credit_product->get_price_html();
         }
 
         return $price_display;
