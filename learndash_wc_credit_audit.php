@@ -3,7 +3,7 @@
  * Plugin Name: LearnDash WooCommerce Credit/Audit Purchase
  * Plugin URI: http://www.learndash.com
  * Description: Add two buttons to LearnDash courses to add credit/audit products to cart
- * Version: 2.5
+ * Version: 2.6
  * Author: Abundant Designs
  * Author URI: http://www.abundantdesigns.com
  * Text Domain: learndash_wc_credit_audit
