@@ -47,8 +47,10 @@ class learndash_wc_credit_audit {
 
         if ( $settings_metabox_key === 'learndash-course-access-settings' ) {
 
-            if ( class_exists( 'LearnDash_Settings_Metabox' ) ) {
-                $settings_instance = LearnDash_Settings_Metabox::get_metabox_instance( 'LearnDash_Settings_Metabox_Course_Access_Settings' );
+            if (
+                class_exists( 'LearnDash_Settings_Metabox' ) &&
+                !empty( $settings_instance = LearnDash_Settings_Metabox::get_metabox_instance( 'LearnDash_Settings_Metabox_Course_Access_Settings' ) )
+            ) {
                 
                 // Retrieve existing values
                 global $post;
