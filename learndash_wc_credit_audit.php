@@ -3,7 +3,7 @@
  * Plugin Name: LearnDash WooCommerce Credit/Audit Purchase
  * Plugin URI: http://www.learndash.com
  * Description: Add two buttons to LearnDash courses to add credit/audit products to cart
- * Version: 2.6
+ * Version: 2.7
  * Author: Abundant Designs
  * Author URI: http://www.abundantdesigns.com
  * Text Domain: learndash_wc_credit_audit
@@ -45,7 +45,9 @@ class learndash_wc_credit_audit {
      */
     public function learndash_settings_fields( $setting_option_fields, $settings_metabox_key ) {
 
-        if ( $settings_metabox_key === 'learndash-course-access-settings' ) {
+        if ( $settings_metabox_key === 'learndash-course-enrollment' ) {
+
+            error_log( var_export( $setting_option_fields, true ) );
 
             if (
                 class_exists( 'LearnDash_Settings_Metabox' ) &&
