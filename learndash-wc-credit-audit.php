@@ -3,11 +3,11 @@
  * Plugin Name: LearnDash WooCommerce Credit/Audit Purchase
  * Plugin URI: http://www.learndash.com
  * Description: Add two buttons to LearnDash courses to add credit/audit products to cart
- * Version: 2.9
+ * Version: 2.10
  * Author: Abundant Designs
  * Author URI: http://www.abundantdesigns.com
- * Text Domain: learndash_wc_credit_audit
- * Update URI: https://manage.abundantdesigns.com/wp-json/update-server/learndash_wc_credit_audit/
+ * Text Domain: learndash-wc-credit-audit
+ * Update URI: https://manage.abundantdesigns.com/wp-json/update-server/learndash-wc-credit-audit/
  * 
  * WC tested up to: 3.8
 */
@@ -88,13 +88,13 @@ class learndash_wc_credit_audit {
                     'course_price_type_wcca_audit_button_product_id' => array(
                         'name'        => 'course_price_type_wcca_audit_button_product_id',
                         'type'        => 'select',
-                        'label'       => esc_html__( 'Audit Button Product', 'learndash_wc_credit_audit' ),
+                        'label'       => esc_html__( 'Audit Button Product', 'learndash-wc-credit-audit' ),
                         'default'     => '',
                         'value'       => $setting_option_values['course_price_type_wcca_audit_button_product_id'],
                         'options'     => $select_product_options,
                         'placeholder' => $select_product_options_default,
                         'help_text'   => sprintf(
-                            esc_html_x( 'Select the WooCommerce Product that will need to be purchased to Audit this %s.', 'placeholder: course', 'learndash_wc_credit_audit' ),
+                            esc_html_x( 'Select the WooCommerce Product that will need to be purchased to Audit this %s.', 'placeholder: course', 'learndash-wc-credit-audit' ),
                             learndash_get_custom_label( 'course' )
                         ),
                         'rest'        => array(
@@ -110,13 +110,13 @@ class learndash_wc_credit_audit {
                     'course_price_type_wcca_credit_button_product_id' => array(
                         'name'        => 'course_price_type_wcca_credit_button_product_id',
                         'type'        => 'select',
-                        'label'       => esc_html__( 'Credit Button Product', 'learndash_wc_credit_audit' ),
+                        'label'       => esc_html__( 'Credit Button Product', 'learndash-wc-credit-audit' ),
                         'default'     => '',
                         'value'       => $setting_option_values['course_price_type_wcca_credit_button_product_id'],
                         'options'     => $select_product_options,
                         'placeholder' => $select_product_options_default,
                         'help_text'   => sprintf(
-                            esc_html_x( 'Select the WooCommerce Product that will need to be purchased to Credit this %s.', 'placeholder: course', 'learndash_wc_credit_audit' ),
+                            esc_html_x( 'Select the WooCommerce Product that will need to be purchased to Credit this %s.', 'placeholder: course', 'learndash-wc-credit-audit' ),
                             learndash_get_custom_label( 'course' )
                         ),
                         'rest'        => array(
@@ -274,13 +274,13 @@ class learndash_wc_credit_audit {
         // Replace "Take this Course" button text with "$10 Audit Course" and "$10 Credit Course"
         $buttons = '';
         if ( $audit_product = wc_get_product( $audit_button_product_id ) ) {
-            $button_text = $audit_product->get_price_html() . __('&nbsp;- Audit Course', 'learndash_wc_credit_audit' );
+            $button_text = $audit_product->get_price_html() . __('&nbsp;- Audit Course', 'learndash-wc-credit-audit' );
             $button_url = wc_get_cart_url() . "?add-to-cart=" . $audit_product->get_id();
             $buttons .= '<a class="btn-join" href="' . $button_url . '" id="btn-join">'. $button_text .'</a> ';
         }
         
         if ( $credit_product = wc_get_product( $credit_button_product_id ) ) {
-            $button_text = $credit_product->get_price_html() . __('&nbsp;- Credit Course', 'learndash_wc_credit_audit' );
+            $button_text = $credit_product->get_price_html() . __('&nbsp;- Credit Course', 'learndash-wc-credit-audit' );
             $button_url = wc_get_cart_url() . "?add-to-cart=" . $credit_product->get_id();
             $buttons .= ' <a class="btn-join" href="' . $button_url . '" id="btn-join">'. $button_text .'</a>';
         }
